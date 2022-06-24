@@ -13,7 +13,7 @@ from core.db import check_user_data
 
 
 if not os.path.exists(find_dotenv(".env")):
-    raise FileNotFoundError("Cant find .env file.")
+    logging.warning("Cant find .env file.")
 load_dotenv()
 
 
