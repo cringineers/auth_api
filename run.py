@@ -32,8 +32,9 @@ sql_engine = create_async_engine(
 
 @app.post("/login")
 async def login():
-    user = request.form.get('username')
-    password = request.form.get('password')
+    body = request.get_json()
+    user = body.get('username')
+    password = body.get('password')
     status, id = await check_user_data(sql_engine, user, password)
     if status:
         token = jwt.encode(
@@ -58,7 +59,8 @@ async def login():
 @app.post("/refresh")
 async def refresh():
     try:
-        refresh_token = request.form.get('refresh_token')
+        body = request.get_json()
+        refresh_token = body.get('refresh_token')
         if refresh_token:
             payload = jwt.decode(refresh_token, secret, alg)
             token = jwt.encode(
