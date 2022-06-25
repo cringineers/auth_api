@@ -6,8 +6,8 @@ from datetime import datetime, timezone, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv, find_dotenv
-from core.db import check_user_data
-
+from passlib.hash import pbkdf2_sha256
+from core.db import get_user_creds
 
 if not os.path.exists(find_dotenv(".env")):
     logging.warning("Cant find .env file.")
@@ -31,18 +31,19 @@ async def login():
     body = request.get_json()
     user = body.get('username')
     password = body.get('password')
-    status, id = await check_user_data(connection_params, user, password)
-    if status:
+    user_id, hash = await get_user_creds(connection_params, user)
+    
+    if pbkdf2_sha256.verify(password, hash):
         token = jwt.encode(
             {
-                "user_id": id,
+                "user_id": user_id,
                 "exp": datetime.now(tz=timezone.utc) + timedelta(minutes=5)
             },
             algorithm=alg,
             key=secret)
         refresh_token = jwt.encode(
             {
-                "user_id": id,
+                "user_id": user_id,
                 "exp": datetime.now(tz=timezone.utc) + timedelta(hours=1)
             },
             algorithm=alg,

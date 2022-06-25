@@ -1,8 +1,10 @@
 import asyncpg
 
 
-async def check_user_data(connection_params, user, password):
+async def get_user_creds(connection_params, user):
     connection = await asyncpg.connect(**connection_params)
-    query = "select id from tag_system.users where login = $1 and hash = $2"
-    user_id = await connection.fetchrow(query, user, password)
-    return user_id is not None, user_id[0] if user_id is not None else None
+    query = "select id, hash from tag_system.users where login = $1"
+    result = await connection.fetchrow(query, user)
+    if result is not None:
+        return result[0], result[1]
+    return None, None
