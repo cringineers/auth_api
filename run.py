@@ -1,15 +1,13 @@
 import os
 import time
-import json
 import logging
 import jwt
-import flask
 from datetime import datetime, timezone, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv, find_dotenv
-from sqlalchemy.ext.asyncio import create_async_engine
 from core.db import check_user_data
+
 
 if not os.path.exists(find_dotenv(".env")):
     logging.warning("Cant find .env file.")
@@ -19,15 +17,13 @@ app = Flask(__name__)
 CORS(app)
 secret = os.environ.get("JWT_KEY")
 alg = os.environ.get("JWT_ALG")
-
-connection_string = f"postgresql+asyncpg://" \
-                    f"{os.environ.get('DB_USER')}:%s" % os.environ.get('DB_PASSWORD') + \
-                    f"@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
-sql_engine = create_async_engine(
-    connection_string,
-    pool_size=int(os.environ.get('POOL_SIZE')),
-    max_overflow=int(os.environ.get('POOL_OVERFLOW')),
-    pool_recycle=int(os.environ.get('POOL_RECYCLE')))
+connection_params = {
+    'database': os.environ.get('DB_NAME'),
+    'user': os.environ.get('DB_USER'),
+    'password': os.environ.get('DB_PASSWORD'),
+    'host': os.environ.get('DB_HOST'),
+    'port': os.environ.get('DB_PORT')
+}
 
 
 @app.post("/login")
@@ -35,7 +31,7 @@ async def login():
     body = request.get_json()
     user = body.get('username')
     password = body.get('password')
-    status, id = await check_user_data(sql_engine, user, password)
+    status, id = await check_user_data(connection_params, user, password)
     if status:
         token = jwt.encode(
             {
